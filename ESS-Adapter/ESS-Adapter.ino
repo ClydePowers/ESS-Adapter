@@ -1,4 +1,3 @@
-//test input
 /* Adapter to make the analog stick on WiiVC Ocarina of Time feel like N64
    For the latest version and additional information: https://github.com/Skuzee/ESS-Adapter */
 
@@ -274,7 +273,7 @@ void normalize_origin(uint8_t coords[2], uint8_t origin[2]) {
   }
 }
 
-void startButtonResets(Gamecube_Data_t &data) { // Resets the program if the Start button is pressed for ~6 seconds.
+void startButtonResets(Gamecube_Data_t *data) { // Resets the program if the Start button is pressed for ~6 seconds.
 #ifdef RST_PIN
 
   static unsigned long timeStamp = millis();
@@ -293,7 +292,7 @@ void startButtonResets(Gamecube_Data_t &data) { // Resets the program if the Sta
 #endif
 }
 
-void analogTriggerToDigitalPress(Gamecube_Data_t &data) { // The following 2 if statments map analog L and R presses to digital presses. The range is 0-255.
+void analogTriggerToDigitalPress(Gamecube_Data_t *data) { // The following 2 if statments map analog L and R presses to digital presses. The range is 0-255.
 #ifdef FIX_TRIGGERS
 
 if (data.report.left > TRIGGER_THRESHOLD)
@@ -334,7 +333,16 @@ void setup() {
   #endif
 }
 
-void loop()
+void loop() {
+	console.write(&data);  // waits for console command and sends controller data
+	// add delay = 1/2 time between polls
+  controller.read();
+  Gamecube_Data_t data = controller.getData();
+}
+
+
+
+void loop() //4734
 {
   controller.read();
   Gamecube_Data_t data = controller.getData();
@@ -342,9 +350,9 @@ void loop()
   normalize_origin(&data.report.xAxis, &data.origin.inititalData.xAxis);
   invert_vc_gc(&data.report.xAxis);
 
-   startButtonResets(data);
-   analogTriggerToDigitalPress(data);
+   startButtonResets(&data);
+   analogTriggerToDigitalPress(&data);
 
-  console.write(data);
-  controller.setRumble(data.status.rumble);
+  console.write(&data);  //  waits for console command and sends controller data
+  controller.setRumble(&data.status.rumble);
 }
