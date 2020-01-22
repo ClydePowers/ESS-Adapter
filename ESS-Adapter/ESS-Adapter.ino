@@ -1,4 +1,5 @@
-/* Adapter to make the analog stick on WiiVC Ocarina of Time feel like N64
+/* n64-dev
+   Adapter to make the analog stick on WiiVC Ocarina of Time feel like N64
    For the latest version and additional information: https://github.com/Skuzee/ESS-Adapter */
 
 /* Basic Wiring Information for ATMEGA: Pins 6 & 8 are default DATA Pins, but any digital pin will work. (ATTINY uses Pins 0 & 2)
@@ -28,9 +29,9 @@
 
 
 //#define ATTINY // Uncomment this line if using an ATTINY85 use pins 0 and 2, or change them below
-#define USE_RST_PIN // Uncomment to enable the use of a hard reset pin
+//#define USE_RST_PIN // Uncomment to enable the use of a hard reset pin
 #define USE_LED_PIN // Uncomment to enable the use of the onboard LED indicator
-#define FIX_TRIGGERS // Uncomment to enable function of analog trigger support
+//#define FIX_TRIGGERS // Uncomment to enable function of analog trigger support
 //#define DEBUG
 
 
@@ -59,9 +60,9 @@
 #endif
 
 
-CGamecubeController controller(CONT_PIN); // Sets Controller Pin on arduino to read from controller.
+CN64Controller controller(CONT_PIN); // Sets Controller Pin on arduino to read from controller.
 CGamecubeConsole console(CONS_PIN); // Sets D8 on arduino to write data to console.
-
+Gamecube_Data_t GC_data = defaultGamecubeData;
 
 void gc_to_n64(uint8_t coords[2]) {
   /* Assume 0 <= y <= x <= 127
@@ -273,7 +274,7 @@ void normalize_origin(uint8_t coords[2], uint8_t origin[2]) {
   }
 }
 
-void startButtonResets(Gamecube_Data_t *data) { // Resets the program if the Start button is pressed for ~6 seconds.
+/*void startButtonResets(N64_Data_t *data) { // Resets the program if the Start button is pressed for ~6 seconds.
 #ifdef RST_PIN
 
   static unsigned long timeStamp = millis();
@@ -290,9 +291,9 @@ void startButtonResets(Gamecube_Data_t *data) { // Resets the program if the Sta
   }
 
 #endif
-}
+}*/
 
-void analogTriggerToDigitalPress(Gamecube_Data_t *data) { // The following 2 if statments map analog L and R presses to digital presses. The range is 0-255.
+/*void analogTriggerToDigitalPress(GC_Data_t &data) { // The following 2 if statments map analog L and R presses to digital presses. The range is 0-255.
 #ifdef FIX_TRIGGERS
 
 if (data.report.left > TRIGGER_THRESHOLD)
@@ -301,12 +302,12 @@ if (data.report.left > TRIGGER_THRESHOLD)
     data.report.r = 1;
 
 #endif
-}
+}*/
 
 void blinkLED(int blinks, int blinkTime) { //blink time in Milliseconds, be warned millis() is not accurate becuase of all the nointerupts() so 100mS = 1 second.
 #ifdef LED_PIN
 
-  for (blinks; blinks>0; blinks--) {
+  for (int i = 0; i<blinks; i++) {
     digitalWrite(LED_PIN, HIGH);
     delay(blinkTime);
     digitalWrite(LED_PIN, LOW);
@@ -314,6 +315,37 @@ void blinkLED(int blinks, int blinkTime) { //blink time in Milliseconds, be warn
   }
 
 #endif
+}
+
+
+void convertToGC(N64_Report_t& N64_report, Gamecube_Report_t& GC_report) {
+
+  //GC_report.a = N64_report.a;
+  GC_report.a = 1;
+	GC_report.b = N64_report.b;
+	GC_report.start = N64_report.start;
+	GC_report.z = N64_report.cdown; // OOT z is also cdown
+	GC_report.r = N64_report.r;
+	GC_report.l = N64_report.l;
+
+	GC_report.x = N64_report.cleft; // OOT x is also cleft
+	GC_report.y = N64_report.cright; // OOT y is also cright
+	GC_report.cyAxis = N64_report.cup*80; // set cyAxis to c-up button
+
+	GC_report.dleft = N64_report.dleft;
+	GC_report.dright = N64_report.dright;
+	GC_report.ddown = N64_report.ddown;
+	GC_report.dup = N64_report.dup;
+
+
+  invert_vc_n64(N64_report.xAxis, GC_report.xAxis);
+  N64_report.xAxis = 80;
+}
+
+
+void writeToUSB_BTYE(Gamecube_Data_t &data) {
+
+	Serial.write(data.report.raw8, sizeof(data.report.raw8));
 }
 
 
@@ -330,29 +362,34 @@ void setup() {
   #ifdef LED_PIN
     pinMode(LED_PIN, OUTPUT);  // Sets LED Pin for debug/status indicating.
     blinkLED(5,100);
+
   #endif
 }
 
-void loop() {
-	console.write(&data);  // waits for console command and sends controller data
-	// add delay = 1/2 time between polls
-  controller.read();
-  Gamecube_Data_t data = controller.getData();
-}
-
-
-
 void loop() //4734
-{
-  controller.read();
-  Gamecube_Data_t data = controller.getData();
-
-  normalize_origin(&data.report.xAxis, &data.origin.inititalData.xAxis);
-  invert_vc_gc(&data.report.xAxis);
-
-   startButtonResets(&data);
-   analogTriggerToDigitalPress(&data);
-
-  console.write(&data);  //  waits for console command and sends controller data
-  controller.setRumble(&data.status.rumble);
+{   
+    Gamecube_Report_t GC_report = defaultGamecubeData.report;
+    GC_report.a = 1;
+    if (GC_report.origin)
+      digitalWrite(LED_PIN, HIGH);
+    else
+      digitalWrite(LED_PIN, LOW);
+      
+    console.write(&GC_report);
 }
+
+/*void loop() //4734
+{
+  //if (controller.read()) {
+   // N64_Report_t N64_report = controller.getReport();
+  	//convertToGC(N64_report, GC_data.report);
+  //  console.write(&GC_data);
+	/*}
+	else {
+		blinkLED(1,10);
+	}
+    Gamecube_Report_t GC_report = {0};
+    GC_report.a = 1;
+   if( console.write(&GC_report)) {
+     blinkLED(1,3);
+   }*/
