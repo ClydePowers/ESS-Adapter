@@ -29,7 +29,7 @@
 
 
 //#define ATTINY // Uncomment this line if using an ATTINY85 use pins 0 and 2, or change them below
-//#define USE_RST_PIN // Uncomment to enable the use of a hard reset pin
+#define USE_RST_PIN // Uncomment to enable the use of a hard reset pin
 #define USE_LED_PIN // Uncomment to enable the use of the onboard LED indicator
 //#define FIX_TRIGGERS // Uncomment to enable function of analog trigger support
 //#define DEBUG
@@ -274,12 +274,12 @@ void normalize_origin(uint8_t coords[2], uint8_t origin[2]) {
   }
 }
 
-/*void startButtonResets(N64_Data_t *data) { // Resets the program if the Start button is pressed for ~6 seconds.
+void startButtonResets(Gamecube_Report_t& GC_report) { // Resets the program if the Start button is pressed for ~6 seconds.
 #ifdef RST_PIN
 
   static unsigned long timeStamp = millis();
 
-  if (data.report.start) {
+  if (GC_report.start) {
     if (millis() - timeStamp > 600) { // If the time since the last press has been 6 seconds, reset.
       blinkLED(3,100);
       // asm volatile ("  jmp 0"); // Soft-reset, Assembly command that jumps to the start of the reset vector.
@@ -291,7 +291,7 @@ void normalize_origin(uint8_t coords[2], uint8_t origin[2]) {
   }
 
 #endif
-}*/
+}
 
 /*void analogTriggerToDigitalPress(GC_Data_t &data) { // The following 2 if statments map analog L and R presses to digital presses. The range is 0-255.
 #ifdef FIX_TRIGGERS
@@ -318,19 +318,21 @@ void blinkLED(int blinks, int blinkTime) { //blink time in Milliseconds, be warn
 }
 
 
-void convertToGC(N64_Report_t& N64_report, Gamecube_Report_t& GC_report) {
+void convertToGC(const N64_Report_t& N64_report, Gamecube_Report_t& GC_report) {
 
-  //GC_report.a = N64_report.a;
-  GC_report.a = 1;
-	GC_report.b = N64_report.b;
+  GC_report.a = N64_report.a;
+  GC_report.b = N64_report.b;
 	GC_report.start = N64_report.start;
 	GC_report.z = N64_report.cdown; // OOT z is also cdown
 	GC_report.r = N64_report.r;
-	GC_report.l = N64_report.l;
+  GC_report.right = N64_report.r * 127;
+	GC_report.l = N64_report.z || N64_report.l;
+	GC_report.left = (N64_report.l || N64_report.z) * 127;
 
-	GC_report.x = N64_report.cleft; // OOT x is also cleft
-	GC_report.y = N64_report.cright; // OOT y is also cright
-	GC_report.cyAxis = N64_report.cup*80; // set cyAxis to c-up button
+
+	GC_report.x = N64_report.cright; // OOT x is also cleft
+	GC_report.y = N64_report.cleft; // OOT y is also cright
+	GC_report.cyAxis = N64_report.cup*127 +128; // set cyAxis to c-up button
 
 	GC_report.dleft = N64_report.dleft;
 	GC_report.dright = N64_report.dright;
@@ -338,8 +340,7 @@ void convertToGC(N64_Report_t& N64_report, Gamecube_Report_t& GC_report) {
 	GC_report.dup = N64_report.dup;
 
 
-  invert_vc_n64(N64_report.xAxis, GC_report.xAxis);
-  N64_report.xAxis = 80;
+  invert_vc_n64(&N64_report.xAxis, &GC_report.xAxis);
 }
 
 
@@ -366,30 +367,38 @@ void setup() {
   #endif
 }
 
-void loop() //4734
-{   
+/*void loop() //4734
+{
     Gamecube_Report_t GC_report = defaultGamecubeData.report;
     GC_report.a = 1;
     if (GC_report.origin)
       digitalWrite(LED_PIN, HIGH);
     else
       digitalWrite(LED_PIN, LOW);
-      
-    console.write(&GC_report);
-}
 
-/*void loop() //4734
+    console.write(GC_report);
+}*/
+
+void loop() //4734
 {
-  //if (controller.read()) {
-   // N64_Report_t N64_report = controller.getReport();
-  	//convertToGC(N64_report, GC_data.report);
-  //  console.write(&GC_data);
-	/*}
-	else {
-		blinkLED(1,10);
-	}
-    Gamecube_Report_t GC_report = {0};
-    GC_report.a = 1;
-   if( console.write(&GC_report)) {
-     blinkLED(1,3);
-   }*/
+  controller.read();
+  if (!controller.connected())
+  blinkLED(1,5);
+  //Gamecube_Report_t GC_Report = {0};
+  //GC_Report.a = 1;
+  //console.write(GC_Report);
+
+  convertToGC(controller.getReport(), GC_data.report);
+  startButtonResets(GC_data.report);
+  console.write(GC_data.report);
+
+
+
+
+  //Gamecube_Report_t GC_Report = {0};
+  //controller.read();
+  //convertToGC(controller.getReport(), GC_Report);
+  //GC_Report.a =1;
+
+
+}
