@@ -326,13 +326,13 @@ void convertToGC(const N64_Report_t& N64_report, Gamecube_Report_t& GC_report) {
 	GC_report.z = N64_report.cdown; // OOT z is also cdown
 	GC_report.r = N64_report.r;
   GC_report.right = N64_report.r * 127;
-	GC_report.l = N64_report.z || N64_report.l;
-	GC_report.left = (N64_report.l || N64_report.z) * 127;
+	GC_report.l = N64_report.z;
+	GC_report.left = N64_report.z * 127;
 
 
 	GC_report.x = N64_report.cright; // OOT x is also cleft
 	GC_report.y = N64_report.cleft; // OOT y is also cright
-	GC_report.cyAxis = N64_report.cup*127 +128; // set cyAxis to c-up button
+	GC_report.cyAxis = 127 + (N64_report.cup*127) - (N64_report.l*127); // set cyAxis to c-up button
 
 	GC_report.dleft = N64_report.dleft;
 	GC_report.dright = N64_report.dright;
