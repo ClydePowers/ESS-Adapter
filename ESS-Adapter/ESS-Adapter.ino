@@ -1,4 +1,4 @@
-//ESS-split.ino
+//n64-dev
 
 
 /* Visit Github for more information: https://github.com/Skuzee/ESS-Adapter */
