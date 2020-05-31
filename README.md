@@ -13,7 +13,8 @@ There are some limitations on how some boards can be powered directly from the W
 I suggest the Sparkfun Pro Micro 5v 16MHz (or a clone). 
 
 ## Wiring
-![Wiring](https://raw.githubusercontent.com/Skuzee/ESS-Adapter/master/ESS-Adapter-Schematic.png "Basic Pro Micro Schematic")
+Cut the controller cable/Extension cable in half. Connect the wires to the Arduino in the following way.
+![Wiring](https://raw.githubusercontent.com/Skuzee/ESS-Adapter/n64-dev/N64-Schematic.png "Basic Pro Micro Schematic")
 
 There are too many variations for me to correctly suggest how to hook power to the Arduino directly from the Wii for each type. 
 Each Arduino/variant has different mosfets/diodes/regulators/wiring; it is not always safe to power the board from the Wii and the USB simultaniously. 
@@ -26,13 +27,14 @@ This can usually be prevented with a step-up booster board, diodes, relays, or o
 -Arduino Nano: Power the board from the Wii 5v wire through a Schottky diode to the 5v pin (not the VIN pin)
 -Sparkfun Pro Micro 5v: Power from the Wii 5v wire through a Schottky diode to the VCC pin (not the RAW pin). Make sure PCB jumper J1 is not soldered closed.
 
-![Jumper J1](https://raw.githubusercontent.com/Skuzee/ESS-Adapter/tree/n64-dev/JumperJ1.jpg "Jumper J1")
+![Jumper J1](https://raw.githubusercontent.com/Skuzee/ESS-Adapter/n64-dev/JumperJ1.jpg "Jumper J1")
 
 
  ### Parts & Tools
  At a minimum you'll need:
 - A 16MHz Atmel AVR Arduino/Clone. I suggest a sparkfun Pro Micro or similar 32u4 clone with USB port.
 - A 740ohm Resistor (500ohm-1000ohm would work in a pinch.)
+- A Schottky diode. (anything 10v 500mA would work fine. THT style.)
 - A soldering iron.
 - Tools to cut and strip wire.
 
